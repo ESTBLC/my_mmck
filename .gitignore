@@ -54,3 +54,6 @@ dkms.conf
 # Folders
 docs/
 build/
+
+# Others
+compile_commands.json
