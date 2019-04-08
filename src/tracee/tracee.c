@@ -38,11 +38,9 @@ void run_tracee(pid_t pid)
         if (has_exited(status))
             return;
 
-        struct syscall *syscall = catch_syscall(pid);
+        struct syscall syscall = catch_syscall(pid);
 
-        match_syscall(syscall);
-
-        free(syscall);
+        match_syscall(&syscall);
     }
 }
 
