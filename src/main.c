@@ -12,5 +12,7 @@ int main(int argc, char *argv[])
 
     pid_t pid = start_tracee(argv[1], argv + 1);
 
+    run_tracee(pid);
+
     return 0;
 }
