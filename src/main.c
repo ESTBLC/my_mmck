@@ -1,7 +1,7 @@
 #include <sys/types.h>
 #include <stdio.h>
 
-#include "tracee/tracee.h"
+#include "strace/tracee.h"
 
 int main(int argc, char *argv[])
 {

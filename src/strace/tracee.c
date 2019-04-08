@@ -9,7 +9,7 @@
 #include <err.h>
 
 #include "tracee.h"
-#include "syscall/syscall.h"
+#include "syscall.h"
 
 static inline bool has_exited(int status);
 

@@ -5,7 +5,7 @@
 #include <stdio.h>
 
 #include "syscall.h"
-#include "tracee/tracee.h"
+#include "tracee.h"
 
 static void execve_func(struct syscall *syscall);
 static void mmap_func(struct syscall *syscall);

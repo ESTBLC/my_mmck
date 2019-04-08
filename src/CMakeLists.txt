@@ -1,4 +1,3 @@
-link_directories(tracee/ syscall/)
+link_directories(strace/)
 
-add_subdirectory(tracee/)
-add_subdirectory(syscall/)
+add_subdirectory(strace/)
