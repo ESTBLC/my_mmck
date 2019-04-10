@@ -8,10 +8,9 @@
 #include <stdbool.h>
 #include <err.h>
 
+#include "strace.h"
 #include "tracee.h"
 #include "syscall.h"
-
-static inline bool has_exited(int status);
 
 pid_t start_tracee(const char *path, char *const args[])
 {
@@ -29,19 +28,6 @@ pid_t start_tracee(const char *path, char *const args[])
     ptrace(PTRACE_SETOPTIONS, pid, 0, PTRACE_O_TRACESYSGOOD);
 
     return pid;
-}
-
-void run_tracee(pid_t pid)
-{
-    while(1) {
-        int status = run_to_syscall(pid);
-        if (has_exited(status))
-            return;
-
-        struct syscall syscall = catch_syscall(pid);
-
-        match_syscall(&syscall);
-    }
 }
 
 int run_to_syscall(pid_t pid) {
@@ -65,7 +51,7 @@ struct user_regs_struct get_regs(pid_t pid) {
     return regs;
 }
 
-static inline bool has_exited(int status)
+bool has_exited(int status)
 {
     return WIFEXITED(status);
 }

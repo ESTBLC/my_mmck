@@ -3,11 +3,11 @@
 
 #include <sys/types.h>
 #include <sys/user.h>
+#include <stdbool.h>
 
 /* Exec */
-pid_t start_tracee(const char *path, char *const args[]);
-void run_tracee(pid_t pid);
 int run_to_syscall(pid_t pid);
+bool has_exited(int status);
 
 struct user_regs_struct get_regs(pid_t pid);
 

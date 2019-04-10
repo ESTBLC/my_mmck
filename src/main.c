@@ -1,7 +1,8 @@
 #include <sys/types.h>
 #include <stdio.h>
 
-#include "strace/tracee.h"
+#include "strace/strace.h"
+#include "memtrack/memtrack.h"
 
 int main(int argc, char *argv[])
 {
@@ -12,7 +13,7 @@ int main(int argc, char *argv[])
 
     pid_t pid = start_tracee(argv[1], argv + 1);
 
-    run_tracee(pid);
+    memtrack(pid);
 
     return 0;
 }
