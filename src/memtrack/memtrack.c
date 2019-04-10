@@ -6,11 +6,11 @@
 
 #include "memtrack.h"
 #include "strace/strace.h"
-#include "htab/htab.h"
+#include "intrlist/intrlist.h"
 
-static void match_syscall(struct syscall const *syscall);
+static void match_syscall(struct syscall const *syscall, intrlist_t *mem_table);
 static void execve_func(struct syscall const *syscall);
-static void mmap_func(struct syscall const *syscall);
+static void mmap_func(struct syscall const *syscall, intrlist_t *mem_table);
 static void mprotect_func(struct syscall const *syscall);
 static void brk_func(struct syscall const *syscall);
 
@@ -19,20 +19,21 @@ static bool cmpfunc(void *key1, void *key2);
 
 void memtrack(pid_t pid)
 {
-    htab_t *htab = htab_new(hfunc, cmpfunc);
+    struct memblock mem_table;
+    intrlist_init(&mem_table.list);
     while(1)
     {
         struct syscall const *syscall = get_next_syscall(pid);
         if (syscall == NULL)
             return;
 
-        match_syscall(syscall);
+        match_syscall(syscall, &mem_table.list);
 
         free((void *)syscall);
     }
 }
 
-static void match_syscall(struct syscall const *syscall)
+static void match_syscall(struct syscall const *syscall, intrlist_t *mem_table)
 {
     //TODO Setup test before doing anything
     switch (syscall->id)
@@ -56,7 +57,7 @@ static void match_syscall(struct syscall const *syscall)
             printf("exit_group()\n");
             break;
         case SYS_mmap:
-            mmap_func(syscall);
+            mmap_func(syscall, mem_table);
             break;
         case SYS_mremap:
             printf("mremap()\n");
@@ -86,9 +87,20 @@ static void execve_func(struct syscall const *syscall)
     printf("execve() = 0x%lx\n", (int64_t)syscall->return_val);
 }
 
-static void mmap_func(struct syscall const *syscall)
+static void mmap_func(struct syscall const *syscall, intrlist_t *mem_table)
 {
     printf("mmap() = 0x%lx\n", (uint64_t)syscall->return_val);
+
+    if (mmap_is_valid(syscall->regs_before.r10))
+    {
+        struct memblock *block = malloc(sizeof(*block));
+        block->addr = (void *)syscall->return_val;
+        block->len = syscall->regs_before.rsi;
+
+        intrlist_append(mem_table, &block->list);
+
+        printf("Alloc %lu bytes at %p\n", block->len, block->addr);
+    }
 }
 
 static void mprotect_func(struct syscall const *syscall)

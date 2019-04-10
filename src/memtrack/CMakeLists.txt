@@ -4,5 +4,5 @@ add_library(memtrack
 
 target_link_libraries(memtrack
     strace
-    htab
+    intrlist
 )
