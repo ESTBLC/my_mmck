@@ -1,5 +1,8 @@
 #include <sys/syscall.h>
+#define _DEFAULT_SOURCE
+#include <sys/mman.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 #include "memtrack.h"
 #include "strace/strace.h"
@@ -31,6 +34,7 @@ void memtrack(pid_t pid)
 
 static void match_syscall(struct syscall const *syscall)
 {
+    //TODO Setup test before doing anything
     switch (syscall->id)
     {
        case SYS_execve:
@@ -70,6 +74,11 @@ static void match_syscall(struct syscall const *syscall)
             printf("SYSCALL\n");
             return;
     }
+}
+
+static bool mmap_is_valid(int flags)
+{
+    return !(flags & MAP_SHARED) && flags & MAP_ANONYMOUS;
 }
 
 static void execve_func(struct syscall const *syscall)
