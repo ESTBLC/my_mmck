@@ -5,11 +5,11 @@
 #include "htab.h"
 
 static void htab_extend(htab_t *htab);
-static struct bucket *buck_new(const void *key, const void *elm);
+static struct bucket *buck_new(void *key, void *elm);
 static inline struct bucket *head_buck(htab_t *htab, size_t index);
-static struct bucket *find_buck(htab_t *htab, const void *key);
+static struct bucket *find_buck(htab_t *htab, void *key);
 
-htab_t *htab_new(size_t (*hfunc)(const void *), bool (*cmpfunc)(const void *, const void *))
+htab_t *htab_new(size_t (*hfunc)(void *), bool (*cmpfunc)(void *, void *))
 {
     assert(hfunc);
 
@@ -36,7 +36,7 @@ void htab_free(htab_t *htab)
     free(htab);
 }
 
-void htab_add(htab_t *htab, const void *key, const void *elm)
+void htab_add(htab_t *htab, void *key, void *elm)
 {
     assert(htab);
     assert(key);
@@ -70,7 +70,7 @@ void htab_add(htab_t *htab, const void *key, const void *elm)
     ++htab->nb_elm;
 }
 
-void *htab_find(htab_t *htab, const void *key)
+void *htab_find(htab_t *htab, void *key)
 {
     struct bucket *buck = find_buck(htab, key);
     if (!buck) {
@@ -80,7 +80,7 @@ void *htab_find(htab_t *htab, const void *key)
     return buck->elm;
 }
 
-void *htab_del(htab_t *htab, const void *key)
+void *htab_del(htab_t *htab, void *key)
 {
     struct bucket *buck = find_buck(htab, key);
     if (!buck) {
@@ -137,7 +137,7 @@ static void htab_extend(htab_t *htab)
     }
 }
 
-static struct bucket *find_buck(htab_t *htab, const void *key)
+static struct bucket *find_buck(htab_t *htab, void *key)
 {
     size_t index = htab->hfunc(key) % htab->cap;
     struct bucket *head = head_buck(htab, index);
@@ -152,7 +152,7 @@ static struct bucket *find_buck(htab_t *htab, const void *key)
     return NULL;
 }
 
-static struct bucket *buck_new(const void *key, const void *elm)
+static struct bucket *buck_new(void *key, void *elm)
 {
     struct bucket *buck = malloc(sizeof(*buck));
     if (!buck) {
