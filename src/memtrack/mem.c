@@ -22,9 +22,13 @@ void memblock_insert(intrlist_t *mem_tab, struct memblock *block)
     {
         if (block->addr > current->addr)
         {
-            intrlist_push(&current->list, &block->list);
+            break;
         }
     }
+
+    intrlist_push(&current->list, &block->list);
+
+    return;
 }
 
 void memblock_remove(struct memblock *block)
@@ -62,7 +66,7 @@ struct memblock *memblock_split(struct memblock *parent, void *addr, size_t len)
     memblock_insert(&parent->list, child);
 
     if (parent->addr < child->addr) {
-        parent->len = addr - parent->addr;
+        parent->len = child->addr - parent->addr;
     } else {
         memblock_remove(parent);
     }
