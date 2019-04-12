@@ -5,17 +5,20 @@
 #include <stdio.h>
 
 #include "memtrack.h"
+#include "mem.h"
 #include "strace/strace.h"
 #include "intrlist/intrlist.h"
 
 static void match_syscall(struct syscall const *syscall, intrlist_t *mem_table);
 static void execve_func(struct syscall const *syscall);
 static void mmap_func(struct syscall const *syscall, intrlist_t *mem_table);
+static void munmap_func(struct syscall const *syscall, intrlist_t *mem_table);
 static void mprotect_func(struct syscall const *syscall);
 static void brk_func(struct syscall const *syscall);
 
-static size_t hfunc(void *);
-static bool cmpfunc(void *key1, void *key2);
+static bool mmap_is_valid(int flags);
+static bool munmap_is_valid(int return_val);
+static void print_mem_table(intrlist_t const *mem_table);
 
 void memtrack(pid_t pid)
 {
@@ -25,12 +28,14 @@ void memtrack(pid_t pid)
     {
         struct syscall const *syscall = get_next_syscall(pid);
         if (syscall == NULL)
-            return;
+            break;
 
         match_syscall(syscall, &mem_table.list);
 
         free((void *)syscall);
     }
+
+    print_mem_table(&mem_table.list);
 }
 
 static void match_syscall(struct syscall const *syscall, intrlist_t *mem_table)
@@ -39,7 +44,6 @@ static void match_syscall(struct syscall const *syscall, intrlist_t *mem_table)
     switch (syscall->id)
     {
        case SYS_execve:
-            execve_func(syscall);
             break;
         case SYS_fork:
             printf("fork()\n");
@@ -66,20 +70,24 @@ static void match_syscall(struct syscall const *syscall, intrlist_t *mem_table)
             mprotect_func(syscall);
             break;
         case SYS_munmap:
-            printf("munmap()\n");
+            munmap_func(syscall, mem_table);
             break;
         case SYS_brk:
             brk_func(syscall);
             break;
         default:
-            printf("SYSCALL\n");
             return;
     }
 }
 
 static bool mmap_is_valid(int flags)
 {
-    return !(flags & MAP_SHARED) && flags & MAP_ANONYMOUS;
+    return !(flags & MAP_SHARED) && !(flags & MAP_ANONYMOUS);
+}
+
+static bool munmap_is_valid(int return_val)
+{
+    return return_val == 0;
 }
 
 static void execve_func(struct syscall const *syscall)
@@ -89,18 +97,39 @@ static void execve_func(struct syscall const *syscall)
 
 static void mmap_func(struct syscall const *syscall, intrlist_t *mem_table)
 {
-    printf("mmap() = 0x%lx\n", (uint64_t)syscall->return_val);
+    if (!mmap_is_valid(syscall->regs_before.r10))
+        return;
 
-    if (mmap_is_valid(syscall->regs_before.r10))
-    {
-        struct memblock *block = malloc(sizeof(*block));
-        block->addr = (void *)syscall->return_val;
-        block->len = syscall->regs_before.rsi;
+    void *addr = (void *)syscall->return_val;
+    size_t len = syscall->regs_before.rsi;
+    int prot = syscall->regs_before.rdx;
 
-        intrlist_append(mem_table, &block->list);
+    struct memblock *block = memblock_new(addr, len, prot);
+    memblock_insert(mem_table, block);
 
-        printf("Alloc %lu bytes at %p\n", block->len, block->addr);
+    printf("mmap { addr = %p, len = 0x%lx, prot = %i }\n", addr, len, prot);
+}
+
+static void munmap_func(struct syscall const *syscall, intrlist_t *mem_table)
+{
+    if (!munmap_is_valid(syscall->return_val))
+        return;
+
+    void *addr = (void *)syscall->regs_before.rdi;
+    size_t len = syscall->regs_before.rsi;
+
+    struct memblock *block = memblock_find(mem_table, addr);
+    if (block != NULL) {
+        block = memblock_split(block, addr, len);
+
+        printf("munmap { addr = %p, len = 0x%lx, prot = %i }\n", addr, len, block->prot);
+
+        memblock_remove(block);
+
+        return;
     }
+
+    printf("--------BLOCK NOT FOUND OR LEN MISMATCH--------\n");
 }
 
 static void mprotect_func(struct syscall const *syscall)
@@ -113,22 +142,13 @@ static void brk_func(struct syscall const *syscall)
     printf("brk() = 0x%lx\n", (int64_t)syscall->return_val);
 }
 
-//Htab config
-static size_t hfunc(void *key)
+static void print_mem_table(intrlist_t const *mem_table)
 {
-    size_t hash = (size_t)key;
-    hash = (~hash) + (hash << 21); // key = (key << 21) - key - 1;
-    hash = hash    ^ (hash >> 24);
-    hash = (hash   + (hash << 3)) + (hash << 8); // key * 265
-    hash = hash    ^ (hash >> 14);
-    hash = (hash   + (hash << 2)) + (hash << 4); // key * 21
-    hash = hash    ^ (hash >> 28);
-    hash = hash    + (hash << 31);
+    printf("--------Memory table--------\n");
 
-    return hash;
-}
-
-static bool cmpfunc(void *key1, void *key2)
-{
-    return key1 == key2;
+    struct memblock *block;
+    intrlist_foreach(mem_table, block, list)
+    {
+        printf("Block: Addr = %p\t Size = 0x%lx\t\t Prot = %i\n", block->addr, block->len, block->prot);
+    }
 }
