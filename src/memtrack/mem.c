@@ -45,26 +45,29 @@ struct memblock *memblock_find(intrlist_t *mem_tab, void *addr)
     return NULL;
 }
 
-void memblock_split(struct memblock *parent, struct memblock *child)
+struct memblock *memblock_split(struct memblock *parent, void *addr, size_t len)
 {
-    if (!parent)
-        return;
+    int prot = parent->prot;
+    struct memblock *child = memblock_new(addr, len, prot);
 
     void *end_parent = parent->addr + parent->len;
     void *end_child = child->addr + child->len;
 
-    if (end_child < end_parent) {
-        struct memblock *tmp = memblock_new(end_child, end_parent - end_child, parent->prot);
+    if (end_child < end_parent)
+    {
+        struct memblock *tmp = memblock_new(end_child, end_parent - end_child, prot);
         memblock_insert(&parent->list, tmp);
     }
 
     memblock_insert(&parent->list, child);
 
     if (parent->addr < child->addr) {
-        parent->len = child->addr - parent->addr;
+        parent->len = addr - parent->addr;
     } else {
         memblock_remove(parent);
     }
+
+    return child;
 }
 
 static bool memblock_contain(struct memblock *block, void *addr)
