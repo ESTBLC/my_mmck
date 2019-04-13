@@ -16,19 +16,7 @@ struct memblock *memblock_new(void *addr, size_t len, int prot)
 
 void memblock_insert(intrlist_t *mem_tab, struct memblock *block)
 {
-    /* Sorted insert */
-    struct memblock *current;
-    intrlist_foreach(mem_tab, current, list)
-    {
-        if (block->addr > current->addr)
-        {
-            break;
-        }
-    }
-
-    intrlist_push(&current->list, &block->list);
-
-    return;
+    intrlist_append(mem_tab, &block->list);
 }
 
 void memblock_remove(struct memblock *block)
@@ -59,11 +47,13 @@ struct memblock *memblock_split(struct memblock *parent, void *addr, size_t len)
 
     if (end_child < end_parent)
     {
-        struct memblock *tmp = memblock_new(end_child, end_parent - end_child, prot);
-        memblock_insert(&parent->list, tmp);
+        size_t len_end = end_parent - end_child;
+        struct memblock *tmp = memblock_new(end_child, len_end, prot);
+        parent->len -= len_end;
+        intrlist_push(&parent->list, &tmp->list);
     }
 
-    memblock_insert(&parent->list, child);
+    intrlist_push(&parent->list, &child->list);
 
     if (parent->addr < child->addr) {
         parent->len = child->addr - parent->addr;
