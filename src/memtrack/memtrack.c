@@ -13,7 +13,7 @@ static void match_syscall(struct syscall const *syscall, intrlist_t *mem_table);
 static void execve_func(struct syscall const *syscall);
 static void mmap_func(struct syscall const *syscall, intrlist_t *mem_table);
 static void munmap_func(struct syscall const *syscall, intrlist_t *mem_table);
-static void mprotect_func(struct syscall const *syscall);
+static void mprotect_func(struct syscall const *syscall, intrlist_t *mem_table);
 static void brk_func(struct syscall const *syscall);
 
 static bool mmap_is_valid(int flags);
@@ -67,7 +67,7 @@ static void match_syscall(struct syscall const *syscall, intrlist_t *mem_table)
             printf("mremap()\n");
             break;
         case SYS_mprotect:
-            mprotect_func(syscall);
+            mprotect_func(syscall, mem_table);
             break;
         case SYS_munmap:
             munmap_func(syscall, mem_table);
@@ -119,7 +119,8 @@ static void munmap_func(struct syscall const *syscall, intrlist_t *mem_table)
     size_t len = syscall->regs_before.rsi;
 
     struct memblock *block = memblock_find(mem_table, addr);
-    if (block != NULL) {
+    if (block != NULL)
+    {
         block = memblock_split(block, addr, len);
 
         printf("munmap { addr = %p, len = 0x%lx, prot = %i }\n", addr, len, block->prot);
@@ -129,12 +130,28 @@ static void munmap_func(struct syscall const *syscall, intrlist_t *mem_table)
         return;
     }
 
-    printf("--------BLOCK NOT FOUND OR LEN MISMATCH--------\n");
+    printf("!!!!!!!!munmap: No block found for addr %p!!!!!!!!\n", addr);
 }
 
-static void mprotect_func(struct syscall const *syscall)
+static void mprotect_func(struct syscall const *syscall, intrlist_t *mem_table)
 {
-    printf("mprotect() = 0x%x\n", (int)syscall->return_val);
+    void *addr = (void *)syscall->regs_before.rdi;
+    size_t len = syscall->regs_before.rsi;
+    int prot = syscall->regs_before.rdx;
+
+    struct memblock *block = memblock_find(mem_table, addr);
+    if (block != NULL)
+    {
+        block = memblock_split(block, addr, len);
+
+        block->prot = prot;
+
+        printf("mprotect { addr = %p, len = 0x%lx, prot = %i }\n", addr, len, prot);
+
+        return;
+    }
+
+    printf("!!!!!!!!mprotect: No block found for addr %p!!!!!!!!\n", addr);
 }
 
 static void brk_func(struct syscall const *syscall)
@@ -144,7 +161,7 @@ static void brk_func(struct syscall const *syscall)
 
 static void print_mem_table(intrlist_t const *mem_table)
 {
-    printf("--------Memory table--------\n");
+    printf("\n--------Memory table--------\n");
 
     struct memblock *block;
     intrlist_foreach(mem_table, block, list)

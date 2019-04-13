@@ -50,13 +50,13 @@ struct memblock *memblock_split(struct memblock *parent, void *addr, size_t len)
         size_t len_end = end_parent - end_child;
         struct memblock *tmp = memblock_new(end_child, len_end, prot);
         parent->len -= len_end;
-        intrlist_push(&parent->list, &tmp->list);
+        memblock_insert(&parent->list, tmp);
     }
 
-    intrlist_push(&parent->list, &child->list);
+    memblock_insert(&parent->list, child);
 
     if (parent->addr < child->addr) {
-        parent->len = child->addr - parent->addr;
+        parent->len -= len;
     } else {
         memblock_remove(parent);
     }
