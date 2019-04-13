@@ -14,7 +14,7 @@ static void execve_func(struct syscall const *syscall);
 static void mmap_func(struct syscall const *syscall, intrlist_t *mem_table);
 static void munmap_func(struct syscall const *syscall, intrlist_t *mem_table);
 static void mprotect_func(struct syscall const *syscall, intrlist_t *mem_table);
-static void brk_func(struct syscall const *syscall);
+static void brk_func(struct syscall const *syscall, intrlist_t *mem_table);
 
 static bool mmap_is_valid(int flags);
 static bool munmap_is_valid(int return_val);
@@ -73,7 +73,7 @@ static void match_syscall(struct syscall const *syscall, intrlist_t *mem_table)
             munmap_func(syscall, mem_table);
             break;
         case SYS_brk:
-            brk_func(syscall);
+            brk_func(syscall, mem_table);
             break;
         default:
             return;
@@ -151,12 +151,34 @@ static void mprotect_func(struct syscall const *syscall, intrlist_t *mem_table)
         return;
     }
 
-    printf("!!!!!!!!mprotect: No block found for addr %p!!!!!!!!\n", addr);
+    printf("!!!!!!!!mprotect: No block found for addr %p and length 0x%lx!!!!!!!!\n", addr, len);
 }
 
-static void brk_func(struct syscall const *syscall)
+static void brk_func(struct syscall const *syscall, intrlist_t *mem_table)
 {
-    printf("brk() = 0x%lx\n", (int64_t)syscall->return_val);
+    static void *brk = NULL;
+
+    void *addr = (void *)syscall->regs_before.rdi;
+
+    if (addr != NULL) {
+        int64_t len = addr - brk;
+        if (len > 0) {
+            // Add new block
+            struct memblock *block = memblock_new(brk, len, 0);    //TODO: find prot
+            memblock_insert(mem_table, block);
+        } else {
+            // Delete block
+            struct memblock *block = memblock_find(mem_table, addr);
+            block = memblock_split(block, addr, len);
+            memblock_remove(block);
+        }
+
+        printf("brk { addr = %p , len = 0x%lx}\n", addr, len);
+    } else {
+        printf("brk { NULL }\n");
+    }
+
+    brk = (void *)syscall->return_val;
 }
 
 static void print_mem_table(intrlist_t const *mem_table)
