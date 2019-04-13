@@ -14,6 +14,7 @@ static void execve_func(struct syscall const *syscall);
 static void mmap_func(struct syscall const *syscall, intrlist_t *mem_table);
 static void munmap_func(struct syscall const *syscall, intrlist_t *mem_table);
 static void mprotect_func(struct syscall const *syscall, intrlist_t *mem_table);
+static void mremap_func(struct syscall const *syscall, intrlist_t *mem_table);
 static void brk_func(struct syscall const *syscall, intrlist_t *mem_table);
 
 static bool mmap_is_valid(int flags);
@@ -64,7 +65,7 @@ static void match_syscall(struct syscall const *syscall, intrlist_t *mem_table)
             mmap_func(syscall, mem_table);
             break;
         case SYS_mremap:
-            printf("mremap()\n");
+            mremap_func(syscall, mem_table);
             break;
         case SYS_mprotect:
             mprotect_func(syscall, mem_table);
@@ -179,6 +180,27 @@ static void brk_func(struct syscall const *syscall, intrlist_t *mem_table)
     }
 
     brk = (void *)syscall->return_val;
+}
+
+static void mremap_func(struct syscall const *syscall, intrlist_t *mem_table)
+{
+    void *old_addr = (void *)syscall->regs_before.rdi;
+    void *new_addr = (void *)syscall->return_val;
+    size_t old_size = syscall->regs_before.rsi;
+    size_t new_size = syscall->regs_before.rdx;
+
+    struct memblock *block = memblock_find(mem_table, old_addr);
+
+    if (new_size < old_size) {
+        struct memblock *block_dealloc = memblock_split(block, old_addr + old_size, old_size - new_size);
+        memblock_remove(block_dealloc);
+    }
+
+    block = memblock_split(block, old_addr, old_size);
+    block->len = new_size;
+    block->addr = new_addr;
+
+    printf("mremap { addr = %p, len = 0x%lx }\n", new_addr, new_size);
 }
 
 static void print_mem_table(intrlist_t const *mem_table)
