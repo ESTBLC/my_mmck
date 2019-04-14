@@ -2,6 +2,7 @@
 #include <sys/ptrace.h>
 #include <sys/syscall.h>
 #include <sys/wait.h>
+#include <sys/uio.h>
 #include <signal.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -42,14 +43,6 @@ int run_to_syscall(pid_t pid) {
     }
 }
 
-struct user_regs_struct get_regs(pid_t pid) {
-    struct user_regs_struct regs;
-
-    ptrace(PTRACE_GETREGS, pid, NULL, &regs);
-
-    return regs;
-}
-
 bool has_exited(int status)
 {
     return WIFEXITED(status);
@@ -58,4 +51,19 @@ bool has_exited(int status)
 bool is_on_syscall(int status)
 {
     return WIFSTOPPED(status) && WSTOPSIG(status)  == (SIGTRAP | 0x80);
+}
+
+struct user_regs_struct get_regs(pid_t pid) {
+    struct user_regs_struct regs;
+
+    ptrace(PTRACE_GETREGS, pid, NULL, &regs);
+
+    return regs;
+}
+
+void read_memory(pid_t pid, void *addr, void *buf, size_t len)
+{
+    struct iovec local_iovec[] = {{buf, len}};
+    struct iovec remote_iovec[] = {{addr, len}};
+    process_vm_readv(pid, local_iovec, 1, remote_iovec, 1, 0);
 }

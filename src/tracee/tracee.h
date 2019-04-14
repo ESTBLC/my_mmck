@@ -12,6 +12,8 @@ int run_to_syscall(pid_t pid);
 bool is_on_syscall(int status);
 bool has_exited(int status);
 
+// Memory
 struct user_regs_struct get_regs(pid_t pid);
+void read_memory(pid_t pid, void *addr, void *buf, size_t len);
 
 #endif

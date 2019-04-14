@@ -1,9 +1,7 @@
 #include <sys/syscall.h>
-#define _DEFAULT_SOURCE
 #include <sys/mman.h>
 #include <stdlib.h>
 #include <stdio.h>
-
 #include "memtrack.h"
 #include "mem.h"
 #include "strace/strace.h"
