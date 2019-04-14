@@ -12,8 +12,6 @@ struct syscall {
     uint64_t return_val;
 };
 
-pid_t start_tracee(const char *path, char *const args[]);
-
 struct syscall *get_next_syscall(pid_t pid);
 
 #endif

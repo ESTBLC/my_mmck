@@ -5,7 +5,7 @@
 #include <stdio.h>
 
 #include "syscall.h"
-#include "tracee.h"
+#include "tracee/tracee.h"
 
 struct syscall *catch_syscall(pid_t pid)
 {
@@ -20,9 +20,4 @@ struct syscall *catch_syscall(pid_t pid)
     syscall->return_val = syscall->regs_after.rax;
 
     return syscall;
-}
-
-bool is_syscall(int status)
-{
-    return WIFSTOPPED(status) && WSTOPSIG(status)  == (SIGTRAP | 0x80);
 }

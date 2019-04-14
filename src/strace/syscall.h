@@ -10,6 +10,4 @@
 
 struct syscall *catch_syscall(pid_t pid);
 
-bool is_syscall(int status);
-
 #endif

@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <stdio.h>
 
+#include "tracee/tracee.h"
 #include "strace/strace.h"
 #include "memtrack/memtrack.h"
 #include "elf/elf.h"

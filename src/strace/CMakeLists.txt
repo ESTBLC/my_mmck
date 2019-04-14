@@ -1,5 +1,8 @@
 add_library(strace
     strace.c
-    tracee.c
     syscall.c
+)
+
+target_link_libraries(strace
+    tracee
 )

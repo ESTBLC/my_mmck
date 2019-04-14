@@ -8,9 +8,8 @@
 #include <stdbool.h>
 #include <err.h>
 
-#include "strace.h"
 #include "tracee.h"
-#include "syscall.h"
+#include "strace/strace.h"
 
 pid_t start_tracee(const char *path, char *const args[])
 {
@@ -38,7 +37,7 @@ int run_to_syscall(pid_t pid) {
 
         waitpid(pid, &status, 0);
 
-        if (is_syscall(status) || has_exited(status))
+        if (is_on_syscall(status) || has_exited(status))
             return status;
     }
 }
@@ -54,4 +53,9 @@ struct user_regs_struct get_regs(pid_t pid) {
 bool has_exited(int status)
 {
     return WIFEXITED(status);
+}
+
+bool is_on_syscall(int status)
+{
+    return WIFSTOPPED(status) && WSTOPSIG(status)  == (SIGTRAP | 0x80);
 }
