@@ -3,6 +3,12 @@
 
 #include <sys/types.h>
 
-void *get_pid_phdr(pid_t pid);
+struct phdrs_info {
+    int phdr_num;
+    int phdr_ent;
+    void *phdrs;
+};
+
+struct phdrs_info get_pid_phdr_info(pid_t pid);
 
 #endif
