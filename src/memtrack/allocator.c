@@ -12,6 +12,9 @@ void match_libc(struct hook_info *info)
         case MALLOC:
             printf("This hook is a malloc\n");
             break;
+        case FREE:
+            printf("This hook is a free\n");
+            break;
         default:
             break;
     }

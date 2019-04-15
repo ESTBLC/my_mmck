@@ -8,7 +8,7 @@
 #include "hook_info.h"
 
 static void *(*libc_malloc)(size_t) = NULL;
-/* static void (*libc_free)(void*) = NULL; */
+static void (*libc_free)(void*) = NULL;
 
 static void push_info(struct hook_info const *info);
 
@@ -19,7 +19,7 @@ void *malloc(size_t size)
 
     void *addr = libc_malloc(size);
 
-    struct hook_info info = {MALLOC, addr};
+    struct hook_info info = {MALLOC, size, 0, 0, 0, (uint64_t)addr};
 
     /* Breakpoint */
     push_info(&info);
@@ -35,10 +35,15 @@ static void push_info(struct hook_info const *info)
     __asm__ ("int3");
 }
 
-/* void free(void *addr) */
-/* { */
-/*     if (libc_free == NULL) */
-/*         libc_free = dlsym(RTLD_NEXT, "free"); */
-/*  */
-/*     return libc_free(addr); */
-/* } */
+void free(void *addr)
+{
+    if (libc_free == NULL)
+        libc_free = dlsym(RTLD_NEXT, "free");
+
+    struct hook_info info = {FREE, (uint64_t)addr, 0, 0, 0, 0};
+
+    /* Breakpoint */
+    push_info(&info);
+
+    return libc_free(addr);
+}
