@@ -7,10 +7,12 @@
 
 /* Exec */
 pid_t start_tracee(const char *path, char *const args[]);
-int run_to_syscall(pid_t pid);
+int run_tracee(pid_t pid);
+int single_step_tracee(pid_t pid);
 
-bool is_on_syscall(int status);
 bool has_exited(int status);
+bool is_on_syscall(int status);
+bool is_on_breakpoint(int status);
 
 // Memory
 struct user_regs_struct get_regs(pid_t pid);

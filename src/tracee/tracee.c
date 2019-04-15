@@ -22,9 +22,10 @@ pid_t start_tracee(const char *path, char *const args[])
 
     if (pid == 0)
     {
+        char *env[] = {"LD_PRELOAD=src/preload/libpreload.so", NULL};
         ptrace(PTRACE_TRACEME, 0, 0, 0);
         raise(SIGSTOP);
-        execvp(path, args);
+        execve(path, args, env);
         /* Tracee launched an stopped */
     }
 
@@ -38,17 +39,26 @@ pid_t start_tracee(const char *path, char *const args[])
     return pid;
 }
 
-int run_to_syscall(pid_t pid) {
-    while(1) {
-        int status = 0;
+int run_tracee(pid_t pid)
+{
+    int status = 0;
 
-        ptrace(PTRACE_SYSCALL, pid, NULL, 0);
+    ptrace(PTRACE_SYSCALL, pid, NULL, 0);
 
-        waitpid(pid, &status, 0);
+    waitpid(pid, &status, 0);
 
-        if (is_on_syscall(status) || has_exited(status))
-            return status;
-    }
+    return status;
+}
+
+int single_step_tracee(pid_t pid)
+{
+    int status = 0;
+
+    ptrace(PTRACE_SINGLESTEP, pid, NULL, 0);
+
+    waitpid(pid, &status, 0);
+
+    return status;
 }
 
 bool has_exited(int status)
@@ -59,6 +69,11 @@ bool has_exited(int status)
 bool is_on_syscall(int status)
 {
     return WIFSTOPPED(status) && WSTOPSIG(status)  == (SIGTRAP | 0x80);
+}
+
+bool is_on_breakpoint(int status)
+{
+    return WSTOPSIG(status) == SIGTRAP;
 }
 
 struct user_regs_struct get_regs(pid_t pid) {
