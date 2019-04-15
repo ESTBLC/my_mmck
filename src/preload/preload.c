@@ -9,6 +9,7 @@
 
 static void *(*libc_malloc)(size_t) = NULL;
 static void *(*libc_calloc)(size_t, size_t) = NULL;
+static void *(*libc_realloc)(void*, size_t) = NULL;
 static void (*libc_free)(void*) = NULL;
 
 static void push_info(struct hook_info const *info);
@@ -28,19 +29,6 @@ void *malloc(size_t size)
     return addr;
 }
 
-void free(void *addr)
-{
-    if (libc_free == NULL)
-        libc_free = dlsym(RTLD_NEXT, "free");
-
-    struct hook_info info = {FREE, (uint64_t)addr, 0, 0, 0, 0};
-
-    /* Breakpoint */
-    push_info(&info);
-
-    return libc_free(addr);
-}
-
 void *calloc(size_t nmemb, size_t size)
 {
     if (libc_calloc == NULL)
@@ -54,6 +42,34 @@ void *calloc(size_t nmemb, size_t size)
     push_info(&info);
 
     return addr;
+}
+
+void *realloc(void *ptr, size_t size)
+{
+    if (libc_realloc == NULL)
+        libc_realloc = dlsym(RTLD_NEXT, "realloc");
+
+    void *addr = libc_realloc(ptr, size);
+
+    struct hook_info info = {REALLOC, (uint64_t)ptr, size, 0, 0, (uint64_t)addr};
+
+    /* Breakpoint */
+    push_info(&info);
+
+    return addr;
+}
+
+void free(void *addr)
+{
+    if (libc_free == NULL)
+        libc_free = dlsym(RTLD_NEXT, "free");
+
+    struct hook_info info = {FREE, (uint64_t)addr, 0, 0, 0, 0};
+
+    /* Breakpoint */
+    push_info(&info);
+
+    return libc_free(addr);
 }
 
 static void push_info(struct hook_info const *info)
