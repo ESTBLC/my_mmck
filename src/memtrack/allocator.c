@@ -4,8 +4,9 @@
 #include "allocator.h"
 #include "tracee/tracee.h"
 #include "preload/hook_info.h"
+#include "intrlist/intrlist.h"
 
-void match_libc(struct hook_info *info)
+void match_libc(struct hook_info *info, intrlist_t *mem_table)
 {
     switch (info->type)
     {

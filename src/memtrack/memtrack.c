@@ -30,7 +30,7 @@ void memtrack(pid_t pid)
         } else if (is_on_breakpoint(sig)) {
             struct hook_info hook_info;
             get_hook_info(pid, &hook_info);
-            match_libc(&hook_info);
+            match_libc(&hook_info, &mem_table.list);
         }
     }
 
