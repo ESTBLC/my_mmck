@@ -19,9 +19,8 @@ int main(int argc, char *argv[])
     pid_t pid = start_tracee(argv[1], argv + 1);
 
     struct r_debug *r_debug_addr = get_r_debug_addr(pid);
-    struct r_debug r_debug = get_r_debug(pid, r_debug_addr);
-    printf("r_debug_tracee->r_version = %i\n", r_debug.r_version);
-
+    /* struct r_debug r_debug = get_r_debug(pid, r_debug_addr); */
+    /* print_link_map(pid, r_debug.r_map); */
 
     memtrack(pid);
 

@@ -1,4 +1,5 @@
 #include <sys/types.h>
+#include <sys/ptrace.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <sys/mman.h>
@@ -33,7 +34,14 @@ struct r_debug *get_r_debug_addr(pid_t pid)
 {
     struct phdrs_info phdrs_info = get_phdrs_info(pid);
     Elf64_Phdr *phdr = get_dynamic_phdr(pid, &phdrs_info);
-    struct r_debug *addr = _get_r_debug_addr(pid, phdr, phdrs_info.phdrs);
+    struct r_debug *addr = NULL;
+
+    while (addr == NULL)
+    {
+        ptrace(PTRACE_SINGLESTEP, pid, 0, 0);
+        if (is_on_syscall())
+        addr = _get_r_debug_addr(pid, phdr, phdrs_info.phdrs);
+    }
 
     free(phdr);
 
@@ -47,6 +55,22 @@ struct r_debug get_r_debug(pid_t pid, struct r_debug *addr)
     read_memory(pid, addr, &r_debug, sizeof(r_debug));
 
     return r_debug;
+}
+
+void print_link_map(pid_t pid, struct link_map *link_map)
+{
+
+    struct link_map elm;
+    read_memory(pid, link_map, &elm, sizeof(elm));
+    link_map = elm.l_next;
+
+    while (link_map != NULL)
+    {
+        read_memory(pid, link_map, &elm, sizeof(elm));
+        printf("LD: Name = %s\t Addr = %p\n", elm.l_name, (void *)elm.l_addr);
+
+        link_map = elm.l_next;
+    }
 }
 
 static struct phdrs_info get_phdrs_info(pid_t pid)

@@ -2,6 +2,7 @@
 #include <sys/mman.h>
 #include <stdlib.h>
 #include <stdio.h>
+
 #include "memtrack.h"
 #include "mem.h"
 #include "strace/strace.h"
@@ -25,13 +26,13 @@ void memtrack(pid_t pid)
     intrlist_init(&mem_table.list);
     while(1)
     {
-        struct syscall const *syscall = get_next_syscall(pid);
+        struct syscall *syscall = get_next_syscall(pid);
         if (syscall == NULL)
             break;
 
         match_syscall(syscall, &mem_table.list);
 
-        free((void *)syscall);
+        free(syscall);
     }
 
     print_mem_table(&mem_table.list);
@@ -43,6 +44,7 @@ static void match_syscall(struct syscall const *syscall, intrlist_t *mem_table)
     switch (syscall->id)
     {
        case SYS_execve:
+            printf("excve()\n");
             break;
         case SYS_fork:
             printf("fork()\n");

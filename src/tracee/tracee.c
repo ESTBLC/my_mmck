@@ -6,11 +6,15 @@
 #include <signal.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <stdbool.h>
+#include <assert.h>
 #include <err.h>
 
 #include "tracee.h"
 #include "strace/strace.h"
+
+static void skip_execve(pid_t pid);
 
 pid_t start_tracee(const char *path, char *const args[])
 {
@@ -25,7 +29,11 @@ pid_t start_tracee(const char *path, char *const args[])
     }
 
     waitpid(pid, NULL, 0);
+
     ptrace(PTRACE_SETOPTIONS, pid, 0, PTRACE_O_TRACESYSGOOD);
+
+    /* Skip execve */
+    skip_execve(pid);
 
     return pid;
 }
@@ -66,4 +74,20 @@ void read_memory(pid_t pid, void *addr, void *buf, size_t len)
     struct iovec local_iovec[] = {{buf, len}};
     struct iovec remote_iovec[] = {{addr, len}};
     process_vm_readv(pid, local_iovec, 1, remote_iovec, 1, 0);
+}
+
+static void skip_execve(pid_t pid)
+{
+    while (1)
+    {
+        struct syscall *syscall = get_next_syscall(pid);
+        if (syscall == NULL)
+            return;
+
+        int id = syscall->id;
+        free (syscall);
+
+        if (id == SYS_execve)
+            return;
+    }
 }
