@@ -5,6 +5,7 @@
 
 enum hook_type {
     MALLOC,
+    CALLOC,
     FREE
 };
 
