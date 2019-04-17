@@ -2,7 +2,7 @@
 #include <stdio.h>
 
 #include "memtrack.h"
-#include "syscall.h"
+/* #include "syscall.h" */
 #include "allocator.h"
 #include "mem.h"
 #include "strace/strace.h"
@@ -24,7 +24,7 @@ void memtrack(pid_t pid)
             break;
         } else if (is_on_syscall(sig)) {
             struct syscall *syscall = catch_syscall(pid);
-            match_syscall(syscall, &mem_table.list);
+            /* match_syscall(syscall, &mem_table.list); */
 
             free(syscall);
         } else if (is_on_breakpoint(sig)) {
@@ -44,6 +44,6 @@ static void print_mem_table(intrlist_t const *mem_table)
     struct memblock *block;
     intrlist_foreach(mem_table, block, list)
     {
-        printf("Block: Addr = %p\t Size = 0x%lx\t\t Prot = %i\n", block->addr, block->len, block->prot);
+        printf("Block: Addr = %p\t Size = 0x%lx\n", block->addr, block->len);
     }
 }

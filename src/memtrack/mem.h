@@ -8,11 +8,10 @@
 struct memblock {
     void *addr;
     size_t len;
-    int prot;
     intrlist_t list;
 };
 
-struct memblock *memblock_new(void *addr, size_t len, int prot);
+struct memblock *memblock_new(void *addr, size_t len);
 void memblock_insert(intrlist_t *mem_tab, struct memblock *block);
 void memblock_remove(struct memblock *block);
 

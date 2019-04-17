@@ -4,12 +4,11 @@
 
 static bool memblock_contain(struct memblock *block, void *addr);
 
-struct memblock *memblock_new(void *addr, size_t len, int prot)
+struct memblock *memblock_new(void *addr, size_t len)
 {
     struct memblock *block = malloc(sizeof(*block));
     block->addr = addr;
     block->len = len;
-    block->prot = prot;
 
     return block;
 }
@@ -39,8 +38,7 @@ struct memblock *memblock_find(intrlist_t *mem_tab, void *addr)
 
 struct memblock *memblock_split(struct memblock *parent, void *addr, size_t len)
 {
-    int prot = parent->prot;
-    struct memblock *child = memblock_new(addr, len, prot);
+    struct memblock *child = memblock_new(addr, len);
 
     void *end_parent = parent->addr + parent->len;
     void *end_child = child->addr + child->len;
@@ -48,7 +46,7 @@ struct memblock *memblock_split(struct memblock *parent, void *addr, size_t len)
     if (end_child < end_parent)
     {
         size_t len_end = end_parent - end_child;
-        struct memblock *tmp = memblock_new(end_child, len_end, prot);
+        struct memblock *tmp = memblock_new(end_child, len_end);
         parent->len -= len_end;
         memblock_insert(&parent->list, tmp);
     }
