@@ -9,7 +9,16 @@
 #include "tracee/tracee.h"
 #include "intrlist/intrlist.h"
 
-static void print_mem_table(intrlist_t const *mem_table);
+#define RED   "\x1B[31m"
+#define GRN   "\x1B[32m"
+#define YEL   "\x1B[33m"
+#define BLU   "\x1B[34m"
+#define MAG   "\x1B[35m"
+#define CYN   "\x1B[36m"
+#define WHT   "\x1B[37m"
+#define RESET "\x1B[0m"
+
+static void print_leaks(intrlist_t const *mem_table);
 
 void memtrack(pid_t pid)
 {
@@ -34,16 +43,16 @@ void memtrack(pid_t pid)
         }
     }
 
-    print_mem_table(&mem_table.list);
+    print_leaks(&mem_table.list);
 }
 
-static void print_mem_table(intrlist_t const *mem_table)
+static void print_leaks(intrlist_t const *mem_table)
 {
-    printf("\n--------Memory table--------\n");
+    printf(RED "\n--------Memory leaks--------\n" RESET);
 
     struct memblock *block;
     intrlist_foreach(mem_table, block, list)
     {
-        printf("Block: Addr = %p\t Size = 0x%lx\n", block->addr, block->len);
+        printf(RED "Block: Addr = %p\t Size = 0x%lx\n" RESET, block->addr, block->len);
     }
 }
