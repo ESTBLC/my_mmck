@@ -7,6 +7,15 @@
 #include "preload/hook_info.h"
 #include "intrlist/intrlist.h"
 
+#define RED   "\x1B[31m"
+#define GRN   "\x1B[32m"
+#define YEL   "\x1B[33m"
+#define BLU   "\x1B[34m"
+#define MAG   "\x1B[35m"
+#define CYN   "\x1B[36m"
+#define WHT   "\x1B[37m"
+#define RESET "\x1B[0m"
+
 static void malloc_func(struct hook_info const *info, intrlist_t *mem_table);
 static void calloc_func(struct hook_info const *info, intrlist_t *mem_table);
 static void realloc_func(struct hook_info const *info, intrlist_t *mem_table);
@@ -46,37 +55,30 @@ static void malloc_func(struct hook_info const *info, intrlist_t *mem_table)
 
 static void calloc_func(struct hook_info const *info, intrlist_t *mem_table)
 {
-    /* void *addr = (void *)info->return_val; */
-    /* size_t size = info->arg1 * info->arg2; */
-    /*  */
-    /* struct memblock *block = memblock_find(mem_table, addr); */
-    /* if (block != NULL) { */
-    /*     block = memblock_split(block, addr, size); */
-    /*  */
-    /*     printf("calloc { addr = %p, size = 0x%lx }\n", addr, size); */
-    /*  */
-    /*     return; */
-    /* } */
-    /*  */
-    /* printf("!!!!!!!!Calloc no block at addr = %p for size = 0x%lx\n", addr, size); */
+    void *addr = (void *)info->return_val;
+    size_t size = info->arg1 * info->arg2;
+
+    struct memblock *block = memblock_new(addr, size);
+    memblock_insert(mem_table, block);
+
+    printf("calloc { addr = %p, size = 0x%lx }\n", addr, size);
 }
 
 static void realloc_func(struct hook_info const *info, intrlist_t *mem_table)
 {
-    /* void *addr = (void *)info->return_val; */
-    /* void *ptr = (void *)info->arg1; */
-    /* size_t size = info->arg2; */
-    /*  */
-    /* struct memblock *block = memblock_find(mem_table, addr); */
-    /* if (block != NULL) { */
-    /*     block = memblock_split(block, addr, size); */
-    /*  */
-    /*     printf("realloc { old_addr = %p, new_addr = %p, size = 0x%lx }\n", ptr, addr, size); */
-    /*  */
-    /*     return; */
-    /* } */
-    /*  */
-    /* printf("!!!!!!!!Realloc no block at addr = %p for size = 0x%lx\n", ptr, size); */
+    void *addr = (void *)info->return_val;
+    void *ptr = (void *)info->arg1;
+    size_t size = info->arg2;
+
+    if (ptr == NULL) {
+        printf(RED "!!!!!!!!Reallocte NULL addr!!!!!!!!\n" RESET);
+        return;
+    }
+
+    struct memblock *block = memblock_find(mem_table, ptr);
+    block->addr = addr;
+
+    printf("realloc { new_addr = %p, old_addr = %p, size = 0x%lx }\n", addr, ptr, size);
 }
 
 static void free_func(struct hook_info const *info, intrlist_t *mem_table)
@@ -93,9 +95,9 @@ static void free_func(struct hook_info const *info, intrlist_t *mem_table)
             return;
         }
 
-        printf("!!!!!!!!Free non malloced pointer!!!!!!!!\n");
+        printf(RED "!!!!!!!!Free non malloced pointer!!!!!!!!\n" RESET);
 
     } else {
-        printf("!!!!!!!!Free NULL pointer!!!!!!!!\n");
+        printf(RED "!!!!!!!!Free NULL pointer!!!!!!!!\n" RESET);
     }
 }
