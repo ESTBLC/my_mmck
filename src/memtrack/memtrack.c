@@ -24,10 +24,10 @@ void memtrack(pid_t pid)
         if (has_exited(sig)) {
             break;
         } else if (is_on_syscall(sig)) {
-            struct syscall *syscall = catch_syscall(pid);
+            /* struct syscall *syscall = catch_syscall(pid); */
             /* match_syscall(syscall, &mem_table.list); */
 
-            free(syscall);
+            /* free(syscall); */
         } else if (is_on_breakpoint(sig)) {
             struct hook_info hook_info;
             get_hook_info(pid, &hook_info);

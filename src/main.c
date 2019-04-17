@@ -11,7 +11,7 @@
 int main(int argc, char *argv[])
 {
     if (argc < 2) {
-        printf("No file specified\n");
+        printf("No executable specified\n");
         return -1;
     }
 
