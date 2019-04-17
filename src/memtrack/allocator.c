@@ -6,15 +6,7 @@
 #include "tracee/tracee.h"
 #include "preload/hook_info.h"
 #include "intrlist/intrlist.h"
-
-#define RED   "\x1B[31m"
-#define GRN   "\x1B[32m"
-#define YEL   "\x1B[33m"
-#define BLU   "\x1B[34m"
-#define MAG   "\x1B[35m"
-#define CYN   "\x1B[36m"
-#define WHT   "\x1B[37m"
-#define RESET "\x1B[0m"
+#include "color.h"
 
 static void malloc_func(struct hook_info const *info, intrlist_t *mem_table);
 static void calloc_func(struct hook_info const *info, intrlist_t *mem_table);
