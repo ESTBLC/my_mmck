@@ -20,7 +20,7 @@ int main(int argc, char *argv[])
 
     struct r_debug dbg;
     get_tracee_r_debug(pid, &dbg);
-    print_link_map(pid, dbg.r_map);
+    find_libc(pid, dbg.r_map);
 
     memtrack(pid);
 

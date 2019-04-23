@@ -13,5 +13,6 @@ struct phdrs_info {
 
 void get_tracee_r_debug(pid_t pid, struct r_debug *r_debug);
 void print_link_map(pid_t pid, struct link_map *link_map);
+void *find_libc(pid_t pid, struct link_map *link_map);
 
 #endif

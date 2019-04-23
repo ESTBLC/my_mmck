@@ -2,7 +2,6 @@
 #include <stdio.h>
 
 #include "memtrack.h"
-/* #include "syscall.h" */
 #include "allocator.h"
 #include "mem.h"
 #include "strace/strace.h"
@@ -14,8 +13,6 @@ static void print_leaks(intrlist_t const *mem_table);
 
 void memtrack(pid_t pid)
 {
-    single_step_tracee(pid);
-
     struct memblock mem_table;
     intrlist_init(&mem_table.list);
     while(1)
