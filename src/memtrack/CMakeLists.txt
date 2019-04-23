@@ -9,5 +9,6 @@ add_library(memtrack
 
 target_link_libraries(memtrack
     strace
+    elf
     intrlist
 )

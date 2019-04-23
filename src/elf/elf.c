@@ -18,7 +18,7 @@ static void *find_r_debug_addr(pid_t pid);
 static void get_tracee_link_map(pid_t pid, void *addr, struct link_map *link_map);
 static Elf64_Dyn *find_libc_in_r_debug(pid_t pid, struct r_debug const *r_debug);
 
-static uint32_t elf_hash(const uint8_t* name);
+static uint32_t elf_hash(const char* name);
 
 void get_tracee_r_debug(pid_t pid, struct r_debug *r_debug)
 {
@@ -71,7 +71,7 @@ void *find_libc (pid_t pid, struct link_map *link_map)
             read_memory(pid, elm.l_name, &name, 50);
 
             if (strstr(name, "libc") != NULL) {
-                printf("LD: Name = %s\t Addr = %p\n", name, (void *)elm.l_addr);
+                /* printf("LD: Name = %s\t Addr = %p\n", name, (void *)elm.l_addr); */
                 return elm.l_ld;
             }
 
@@ -80,6 +80,54 @@ void *find_libc (pid_t pid, struct link_map *link_map)
 
         single_step_tracee(pid);
     }
+}
+
+void *find_symbol(pid_t pid, void *libc, char const *name)
+{
+    Elf64_Dyn htab_dyn;
+    Elf64_Dyn symtab_dyn;
+    Elf64_Dyn strtab_dyn;
+
+    find_dyn(pid, libc, &htab_dyn, DT_HASH);
+    find_dyn(pid, libc, &symtab_dyn, DT_SYMTAB);
+    find_dyn(pid, libc, &strtab_dyn, DT_STRTAB);
+
+    uint32_t *htab = (uint32_t *)htab_dyn.d_un.d_ptr;
+    Elf64_Sym *symtab = (Elf64_Sym*)symtab_dyn.d_un.d_ptr;
+    char *strtab = (char *)strtab_dyn.d_un.d_ptr;
+
+    uint32_t nbucket;
+    uint32_t nchain;
+
+    read_memory(pid, htab, &nbucket, sizeof(nbucket));
+    read_memory(pid, htab + 1, &nchain, sizeof(nchain));
+
+    uint32_t *bucket = htab + 2;
+    uint32_t *chain = bucket + nbucket;
+
+    uint32_t hash = elf_hash(name);
+
+    uint32_t i;
+    read_memory(pid, bucket + (hash % nbucket), &i, sizeof(i));
+    while (i != 0) {
+        Elf64_Sym sym;
+        read_memory(pid, symtab + i, &sym, sizeof(sym));
+
+        char st_name[50];
+        read_memory(pid, strtab + sym.st_name, st_name, 50);
+        if (strcmp(name, st_name) == 0) {
+            return symtab + i;
+        }
+
+        read_memory(pid, chain + i, &i, sizeof(i));
+    }
+
+    return NULL;
+    /* printf("htab at %p\n", (void *)htab_dyn.d_un.d_ptr); */
+    /* printf("symtab at %p\n", (void *)symtab_dyn.d_un.d_ptr); */
+    /* printf("strtab at %p\n", (void *)strtab_dyn.d_un.d_ptr); */
+
+    return NULL;
 }
 
 static void *find_r_debug_addr(pid_t pid)
@@ -106,7 +154,7 @@ static void get_tracee_link_map(pid_t pid, void *addr, struct link_map *link_map
     read_memory(pid, addr, link_map, sizeof(*link_map));
 }
 
-static uint32_t elf_hash(const uint8_t* name) {
+static uint32_t elf_hash(const char* name) {
     uint32_t h = 0, g;
     for (; *name; name++) {
         h = (h << 4) + *name;
@@ -117,22 +165,3 @@ static uint32_t elf_hash(const uint8_t* name) {
     }
     return h;
 }
-
-/*  */
-
-/*  */
-/* static void *find_symbol_libc(pid_t pid, char const *name) */
-/* { */
-/*     void *r_debug_addr = find_r_debug_addr(pid); */
-/*     struct r_debug r_debug; */
-/*     get_tracee_r_debug(pid, r_debug_addr, &r_debug); */
-/*  */
-/*     void *libc_addr = find_libc_in_r_debug(&r_debug); */
-/*     Elf64_Dyn symtab; */
-/*     Elf64_Dyn strtab; */
-/*     find_dyn(pid, libc_addr, &symtab, DT_SYMTAB); */
-/*     find_dyn(pid, libc_addr, &strtab, DT_STRTAB); */
-/*  */
-/*     Elf64_Sym sym; */
-/*     Elf64_Sym const *sym_addr = symtab */
-/* } */

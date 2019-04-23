@@ -18,10 +18,6 @@ int main(int argc, char *argv[])
 
     pid_t pid = start_tracee(argv[1], argv + 1);
 
-    struct r_debug dbg;
-    get_tracee_r_debug(pid, &dbg);
-    find_libc(pid, dbg.r_map);
-
     memtrack(pid);
 
     return 0;

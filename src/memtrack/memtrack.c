@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <link.h>
 
 #include "memtrack.h"
 #include "allocator.h"
@@ -7,16 +8,23 @@
 #include "strace/strace.h"
 #include "tracee/tracee.h"
 #include "intrlist/intrlist.h"
+#include "elf/elf.h"
 #include "color.h"
 
 static void print_leaks(intrlist_t const *mem_table);
 
 void memtrack(pid_t pid)
 {
+    struct r_debug dbg;
+    get_tracee_r_debug(pid, &dbg);
+    void *libc_dyn = find_libc(pid, dbg.r_map);
+    void *mprotect_addr = find_symbol(pid, libc_dyn, "mprotect");
+    printf("mprotect at %p\n", mprotect_addr);
+
     struct memblock mem_table;
     intrlist_init(&mem_table.list);
-    while(1)
-    {
+
+    while(1) {
         int sig = run_tracee(pid);
         if (has_exited(sig)) {
             break;
