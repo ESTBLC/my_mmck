@@ -18,5 +18,6 @@ add_executable(sample src/test/sample.c)
 target_link_libraries(${CMAKE_PROJECT_NAME}
     strace
     tracee
+    elf
     memtrack
 )

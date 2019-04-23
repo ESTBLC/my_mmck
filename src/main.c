@@ -6,6 +6,7 @@
 
 #include "tracee/tracee.h"
 #include "strace/strace.h"
+#include "elf/elf.h"
 #include "memtrack/memtrack.h"
 
 int main(int argc, char *argv[])
@@ -16,6 +17,10 @@ int main(int argc, char *argv[])
     }
 
     pid_t pid = start_tracee(argv[1], argv + 1);
+
+    struct r_debug dbg;
+    get_tracee_r_debug(pid, &dbg);
+    print_link_map(pid, dbg.r_map);
 
     memtrack(pid);
 
