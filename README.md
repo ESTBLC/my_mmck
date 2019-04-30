@@ -1,2 +1,5 @@
-# my_mmck
-my_mmck
+# mymmck
+Simple memory checker.
+
+## Features
+- Detect memory leaks
